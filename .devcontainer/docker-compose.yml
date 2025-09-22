@@ -1,0 +1,21 @@
+services:
+    modulo-consultas-parlamentarias-devcontainer:
+        image: modulo-consultas-parlamentarias-devcontainer
+        container_name: modulo-consultas-parlamentarias-devcontainer
+        build:
+            context: ..
+            dockerfile: .devcontainer/Dockerfile
+        volumes:
+            - ..:/workspace:cached
+            - ../resources/:/resources
+        env_file:
+            - ../.env
+        # This keeps the devcontainer running.
+        entrypoint: ["tail", "-f", "/dev/null"]
+        networks:
+            - modulo-consultas-parlamentarias
+
+networks:
+    modulo-consultas-parlamentarias:
+        name: modulo-consultas-parlamentarias
+        driver: bridge

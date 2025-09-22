@@ -1,0 +1,47 @@
+services:
+    modulo-consultas-parlamentarias-core:
+        image: modulo-consultas-parlamentarias-core
+        container_name: modulo-consultas-parlamentarias-core
+        build:
+            context: .
+            dockerfile: ./docker/core/Dockerfile
+            ssh:
+                - default
+        volumes:
+            - $PWD/resources:/resources
+        env_file:
+            - .env
+        privileged: true
+        networks:
+            - modulo-consultas-parlamentarias
+
+    modulo-consultas-parlamentarias-qdrant:
+        image: qdrant/qdrant:v1.15.1
+        container_name: modulo-consultas-parlamentarias-qdrant
+        ports:
+            - "6333:6333"
+            - "6334:6334"
+        volumes:
+            - ./resources/db/qdrant:/qdrant/storage
+        restart: unless-stopped
+        networks:
+            - modulo-consultas-parlamentarias
+
+    modulo-consultas-parlamentarias-mcp:
+        image: modulo-consultas-parlamentarias-mcp
+        container_name: modulo-consultas-parlamentarias-mcp
+        build:
+            context: .
+            dockerfile: ./docker/mcp/Dockerfile
+        volumes:
+            - $PWD/resources:/resources
+        env_file:
+            - .env
+        restart: unless-stopped
+        networks:
+            - modulo-consultas-parlamentarias
+
+networks:
+    modulo-consultas-parlamentarias:
+        name: modulo-consultas-parlamentarias
+        driver: bridge

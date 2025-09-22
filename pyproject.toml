@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=80", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "modulo_consultas_parlamentarias"
+requires-python = ">=3.11"
+dynamic = ["version", "dependencies"]
+authors = [
+    { name = "Julián Ansaldo", email = "juli@collectiveai.io" },
+    { name = "Lionel Chamorro", email = "lio@collectiveai.io" }
+]
+description = "Módulo de Consultas Parlamentarias"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages.find]
+include = ["modulo_consultas_parlamentarias"]
+
+[tool.setuptools.package-data]
+"*" = ["conf/*"]
+
+[tool.setuptools_scm]
+version_file = "modulo_consultas_parlamentarias/version.py"

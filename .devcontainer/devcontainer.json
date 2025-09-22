@@ -1,0 +1,50 @@
+{
+    "name": "modulo-consultas-parlamentarias-devcontainer",
+    "initializeCommand": "make core-build",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "modulo-consultas-parlamentarias-devcontainer",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.locator": "js",
+                "extensions.verifySignature": false,
+                "files.trimFinalNewlines": true,
+                "files.trimTrailingWhitespace": true,
+                "files.watcherExclude": {
+                    ".git/**": true,
+                    "./resources/**": true,
+                    "./notebooks/**": true
+                },
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll": "never"
+                    }
+                },
+                "[json]": {
+                    "editor.defaultFormatter": "esbenp.prettier-vscode"
+                },
+                "editor.formatOnSave": true,
+                "notebook.formatOnSave.enabled": true,
+                "notebook.output.scrolling": true,
+                "ruff.lineLength": 80,
+                "python.pyrefly.disableLanguageServices": true
+            },
+            "extensions": [
+                "charliermarsh.ruff",
+                "meta.pyrefly",
+                "esbenp.prettier-vscode",
+                "eamodio.gitlens",
+                "ms-azuretools.vscode-docker",
+                "ms-toolsai.jupyter",
+                "tamasfe.even-better-toml",
+                "christian-kohler.path-intellisense",
+                "DBCode.dbcode",
+                "ms-python.isort",
+                "seatonjiang.gitmoji-vscode"
+            ]
+        }
+    },
+    "postCreateCommand": "bash .devcontainer/entrypoint.sh"
+}
