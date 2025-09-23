@@ -22,7 +22,17 @@ TABLES_MAP = {
 }
 
 
-@mcp.resource("db://tables")
+# @mcp.resource(
+#     uri="db://tables",
+#     description="List available tables.",
+#     annotations={"audience": ["assistant"], "priority": 1.0},
+#     tags=["Database"],
+# )
+@mcp.tool(
+    name="list_tables",
+    description="List available tables.",
+    tags=["Database"],
+)
 def list_tables() -> List[Dict[str, Any]]:
     """
     List available tables.
@@ -40,7 +50,17 @@ def list_tables() -> List[Dict[str, Any]]:
     return tables  # FastMCP will package this as a resource with JSON text
 
 
-@mcp.resource("db://schema/{table_name}")
+# @mcp.resource(
+#     uri="db://schema/{table_name}",
+#     description="Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).",
+#     annotations={"audience": ["assistant"], "priority": 1.0},
+#     tags=["Database"],
+# )
+@mcp.tool(
+    name="table_schema",
+    description="Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).",
+    tags=["Database"],
+)
 def table_schema(table_name: str) -> Dict[str, Any]:
     """
     Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).
@@ -53,7 +73,17 @@ def table_schema(table_name: str) -> Dict[str, Any]:
     return get_table_info_sqlmodel(sql_model)
 
 
-@mcp.resource("db://preview/{table_name}")
+# @mcp.resource(
+#     uri="db://preview/{table_name}",
+#     description="Return first rows of a table. Supports ?limit= in the URI.",
+#     annotations={"audience": ["assistant"], "priority": 1.0},
+#     tags=["Database"],
+# )
+@mcp.tool(
+    name="table_preview",
+    description="Return first rows of a table. Supports ?limit= in the URI.",
+    tags=["Database"],
+)
 def table_preview(table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
     """
     Return first rows of a table. Supports ?limit= in the URI.
@@ -67,7 +97,11 @@ def table_preview(table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
     return [dict(r) for r in result]
 
 
-@mcp.tool
+@mcp.tool(
+    name="run_select",
+    description="Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety.",
+    tags=["Database"],
+)
 def run_select(sql_query: str, limit: Optional[int] = 100) -> List[Dict[str, Any]]:
     """
     Run a read-only SELECT with an optional LIMIT guard.
@@ -78,22 +112,29 @@ def run_select(sql_query: str, limit: Optional[int] = 100) -> List[Dict[str, Any
         raise ValueError("Only SELECT statements are permitted.")
     if " limit " not in q.lower() and limit:
         q = f"{q} LIMIT {int(limit)}"
+
     with Session(get_engine()) as session:
         result = session.exec(text(q)).all()
+
     # Convert result rows to dictionaries
     # For raw SQL queries, we need to handle the result differently
     if result:
         # Get column names from the first row
         first_row = result[0]
-        if hasattr(first_row, '_mapping'):
+        if hasattr(first_row, "_mapping"):
             # SQLAlchemy Row object with _mapping
             return [dict(row._mapping) for row in result]
-        elif hasattr(first_row, '__dict__'):
+        elif hasattr(first_row, "__dict__"):
             # SQLModel object
             return [dict(row) for row in result]
         else:
             # Scalar values or tuples - convert to list of values
-            return [{"value": row} if not isinstance(row, (list, tuple)) else {"values": list(row)} for row in result]
+            return [
+                {"value": row}
+                if not isinstance(row, (list, tuple))
+                else {"values": list(row)}
+                for row in result
+            ]
     return []
 
 
