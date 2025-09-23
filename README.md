@@ -65,7 +65,7 @@ make qdrant-start
 make mcp-up
 
 # Or run interactively for development
-make mcp-run
+ uv run python modulo_consultas_parlamentarias/server/server.py
 ```
 
 ### 5. Environment Configuration
