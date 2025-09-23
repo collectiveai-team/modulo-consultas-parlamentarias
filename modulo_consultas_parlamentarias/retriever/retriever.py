@@ -9,7 +9,7 @@ from langchain.vectorstores.base import VectorStoreRetriever
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_qdrant import FastEmbedSparse, QdrantVectorStore, RetrievalMode
-from pydantic import BaseModel, NonNegativeFloat, NonNegativeInt, StrictStr
+from pydantic import BaseModel, NonNegativeFloat, StrictStr
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, SparseVectorParams, VectorParams
 
@@ -30,7 +30,6 @@ logger = get_logger(__name__)
 class TextChunk(BaseModel):
     text: StrictStr
     metadata: dict
-    # num_tokens: NonNegativeInt
 
 
 class RetrieverItem(BaseModel):
@@ -131,9 +130,7 @@ class Retriever:
         )
 
     def create_collection(self, collection_name: str) -> None:
-        if self.qadrant_client.collection_exists(
-            collection_name=collection_name
-        ):
+        if self.qadrant_client.collection_exists(collection_name=collection_name):
             logger.warning(f"collection {collection_name} already exists.")
             return
 
@@ -157,15 +154,11 @@ class Retriever:
         collection_name: str,
         text_chunks: list[TextChunk],
     ) -> None:
-        if not self.qadrant_client.collection_exists(
-            collection_name=collection_name
-        ):
+        if not self.qadrant_client.collection_exists(collection_name=collection_name):
             logger.warning(f"collection {collection_name} doesn't exists.")
             return
 
-        vector_store = self._get_hybrid_vector_store(
-            collection_name=collection_name
-        )
+        vector_store = self._get_hybrid_vector_store(collection_name=collection_name)
 
         documents = [
             Document(
@@ -198,9 +191,7 @@ class Retriever:
         k: int = 10,
         search_filter: models.Filter | None = None,
     ) -> list[RetrieverItem]:
-        vector_store = self._get_dense_vector_store(
-            collection_name=collection_name
-        )
+        vector_store = self._get_dense_vector_store(collection_name=collection_name)
 
         results = await vector_store.asimilarity_search_with_score(
             query=query,
@@ -217,9 +208,7 @@ class Retriever:
         k: int = 10,
         search_filter: models.Filter | None = None,
     ) -> list[RetrieverItem]:
-        vector_store = self._get_hybrid_vector_store(
-            collection_name=collection_name
-        )
+        vector_store = self._get_hybrid_vector_store(collection_name=collection_name)
 
         results = await vector_store.asimilarity_search_with_score(
             query=query,

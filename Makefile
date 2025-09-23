@@ -39,3 +39,29 @@ mcp-stop:
 	docker stop modulo-consultas-parlamentarias-mcp
 
 mcp-restart: mcp-stop mcp-up
+
+
+# Database operations
+db-init:
+	uv run python -m scripts.db_manager init
+
+db-create-tables:
+	uv run python -m scripts.db_manager create-tables
+
+db-populate:
+	uv run python -m scripts.populate_db
+
+db-migrate:
+	uv run alembic -c modulo_consultas_parlamentarias/alembic.ini upgrade head
+
+db-migration:
+	uv run alembic -c modulo_consultas_parlamentarias/alembic.ini revision --autogenerate -m "$(MESSAGE)"
+
+# Linting and formatting
+linter:
+	uv run ruff check ./
+	uv run ruff format ./
+
+linter-fix:
+	uv run ruff check --fix ./
+	uv run ruff format ./
