@@ -1,87 +1,107 @@
-"""SQLModel for Legisladores Diputados (Deputies/Legislators)."""
+"""SQLModel definitions for parliamentary legislators (legisladores)."""
 
 import uuid
 from datetime import datetime
 from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, field_validator
-from sqlmodel import Column, DateTime, Field, SQLModel, func, text
+from sqlmodel import Field, SQLModel, func, text
 
 
-class DBLegisladorDiputado(SQLModel, table=True):
-    """Database model for deputies/legislators (diputados)."""
-    
-    __tablename__ = "legisladores_diputados"
+class DBLegisladorBase(SQLModel):
+    """Base model shared by all legislators tables."""
 
+    # Index and primary key
     id: uuid.UUID | None = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
         index=True,
     )
 
+    # Legislator information
+    nombre: str = Field(..., nullable=False, index=True)
+    distrito: str = Field(..., nullable=False, index=True)
+    sexo: str | None = Field(None, nullable=True)
+    imagen: str | None = Field(None, nullable=True)
+
+    # Timestamps
     created_at: datetime = Field(
-        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")}
+        nullable=False,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
     )
     updated_at: datetime | None = Field(
-        sa_column=Column(DateTime(), onupdate=func.now())
+        default=None,
+        sa_column_kwargs={"onupdate": func.now()},
     )
 
-    # Original CSV fields
-    diputado_id: int = Field(..., nullable=False, index=True, unique=True)
-    nombre: str = Field(..., nullable=False, index=True)
-    apellido: str | None = Field(None, nullable=True, index=True)
-    nombre_completo: str | None = Field(None, nullable=True)
-    
-    # Personal information
-    genero: str | None = Field(None, nullable=True)
-    fecha_nacimiento: str | None = Field(None, nullable=True)
-    lugar_nacimiento: str | None = Field(None, nullable=True)
-    
-    # Political information
-    partido: str | None = Field(None, nullable=True, index=True)
-    bloque_id: int | None = Field(None, nullable=True, index=True)
-    distrito: str | None = Field(None, nullable=True, index=True)
-    
-    # Contact and media
-    email: str | None = Field(None, nullable=True)
-    telefono: str | None = Field(None, nullable=True)
-    imagen: str | None = Field(None, nullable=True)
-    
-    # Legislative period
-    periodo_inicio: str | None = Field(None, nullable=True)
-    periodo_fin: str | None = Field(None, nullable=True)
-    activo: bool = Field(default=True, nullable=False)
-    
-    @field_validator("nombre", "apellido", "nombre_completo", "partido", "distrito", mode="before")
+    @field_validator("nombre", "sexo", "distrito", "imagen", mode="before")
     def validate_text_fields(cls, value: Any) -> str | None:
-        """Validate and clean text fields."""
-        if value is None or (isinstance(value, str) and value.strip() == ""):
+        """
+        Validate and clean text fields.
+
+        Args:
+            value (Any): The input value to validate.
+
+        Returns:
+            str | None: The cleaned string or None if input is empty.
+        """
+        if value is None or (isinstance(value, str) and not value.strip()):
             return None
-        return str(value).strip() if value else None
+        return str(value).strip()
 
 
-class DBLegisladorDiputadoPublic(BaseModel):
-    """Public model for deputies/legislators (diputados)."""
-    
+class DBLegisladorDiputados(DBLegisladorBase, table=True):
+    """Database model for deputies (diputados)."""
+
+    __tablename__ = "legisladores_diputados"
+
+    # Field specific to diputados
+    diputado_id: int = Field(
+        ...,
+        alias="diputadoId",
+        nullable=False,
+        index=True,
+        unique=True,
+    )
+
+
+class DBLegisladorSenadores(DBLegisladorBase, table=True):
+    """Database model for senators (senadores)."""
+
+    __tablename__ = "legisladores_senadores"
+
+    # Field specific to senadores
+    senador_id: int = Field(
+        ...,
+        alias="senadorId",
+        nullable=False,
+        index=True,
+        unique=True,
+    )
+
+
+class DBLegisladorPublicBase(BaseModel):
+    """Base public model shared between deputies and senators."""
+
     model_config: ClassVar[ConfigDict] = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None = None
 
-    diputado_id: int
     nombre: str
-    apellido: str | None = None
-    nombre_completo: str | None = None
-    genero: str | None = None
-    fecha_nacimiento: str | None = None
-    lugar_nacimiento: str | None = None
-    partido: str | None = None
-    bloque_id: int | None = None
-    distrito: str | None = None
-    email: str | None = None
-    telefono: str | None = None
+    distrito: str
+    sexo: str | None = None
     imagen: str | None = None
-    periodo_inicio: str | None = None
-    periodo_fin: str | None = None
-    activo: bool = True
+
+
+class DBLegisladorDiputadosPublic(DBLegisladorPublicBase):
+    """Public model for deputies (diputados)."""
+
+    diputado_id: int
+
+
+class DBLegisladorSenadoresPublic(DBLegisladorPublicBase):
+    """Public model for senators (senadores)."""
+
+    senador_id: int

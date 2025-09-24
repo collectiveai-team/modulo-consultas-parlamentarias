@@ -7,12 +7,10 @@ from alembic import context
 from sqlmodel import SQLModel
 
 from modulo_consultas_parlamentarias.db.engine import get_engine
+
 # Import all models to ensure they are registered with SQLModel
 # This is important for autogenerate to work properly
-from modulo_consultas_parlamentarias.db.models.asuntos import DBAsuntoDiputado  # noqa: F401
-from modulo_consultas_parlamentarias.db.models.bloques import DBBloqueDiputado  # noqa: F401
-from modulo_consultas_parlamentarias.db.models.legisladores import DBLegisladorDiputado  # noqa: F401
-from modulo_consultas_parlamentarias.db.models.votaciones import DBVotacionDiputado  # noqa: F401
+from modulo_consultas_parlamentarias.db.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -72,8 +70,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
-            target_metadata=target_metadata
+            connection=connection, target_metadata=target_metadata
         )
 
         with context.begin_transaction():
