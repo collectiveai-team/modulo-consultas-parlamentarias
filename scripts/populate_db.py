@@ -688,7 +688,7 @@ class CSVDataPopulator:
         Returns:
             int: Number of new records added.
         """
-        csv_file = self.csv_dir / "diputados-senadores.csv"
+        csv_file = self.csv_dir / "senadores-senadores.csv"
         if not csv_file.exists():
             logger.warning(f"CSV file not found: {csv_file}")
             return 0
@@ -699,7 +699,7 @@ class CSVDataPopulator:
         df.columns = df.columns.str.strip().str.lower()
 
         # Map CSV columns to model fields - the CSV uses diputadoId but this is senator data
-        column_mapping = {"diputadoid": "senador_id"}
+        column_mapping = {"senadorid": "senador_id"}
 
         df = df.rename(columns=column_mapping)
         records = df.to_dict("records")
@@ -796,7 +796,7 @@ class CSVDataPopulator:
 
             # Perform bulk insert
             try:
-                session.execute(insert(DBVotacionDiputados), records_to_insert)
+                session.exec(insert(DBVotacionDiputados), records_to_insert)
                 session.commit()
                 total_added = len(records_to_insert)
                 logger.info(
@@ -822,21 +822,14 @@ class CSVDataPopulator:
             logger.warning(f"CSV file not found: {csv_file}")
             return 0
 
-        df = self._read_csv_safely(csv_file, separator=";")
+        df = self._read_csv_safely(csv_file)
         df.columns = df.columns.str.strip().str.lower()
-
-        logger.info(
-            f"Original columns in votaciones-senadores.csv: {list(df.columns)}"
-        )
-
         column_mapping = {
             "asuntoid": "asunto_id",
-            "diputadoid": "senador_id",  # The CSV uses diputadoId but this is senator data
+            "senadorid": "senador_id",
             "bloqueid": "bloque_id",
         }
         df = df.rename(columns=column_mapping)
-
-        logger.info(f"Columns after mapping: {list(df.columns)}")
 
         # Check if required columns exist
         required_cols = ["asunto_id", "senador_id", "voto"]
@@ -887,7 +880,7 @@ class CSVDataPopulator:
 
             # Perform bulk insert
             try:
-                session.execute(insert(DBVotacionSenadores), records_to_insert)
+                session.exec(insert(DBVotacionSenadores), records_to_insert)
                 session.commit()
                 total_added = len(records_to_insert)
                 logger.info(
