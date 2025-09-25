@@ -1,5 +1,5 @@
 from sqlmodel import Session, text
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastmcp import FastMCP
 from modulo_consultas_parlamentarias.db.engine import get_engine
@@ -33,7 +33,7 @@ TABLES_MAP = {
     description="List available tables.",
     tags=["Database"],
 )
-def list_tables() -> List[Dict[str, Any]]:
+def list_tables() -> list[dict[str, Any]]:
     """
     List available tables.
     Returns a JSON-serializable list with names and basic metadata.
@@ -61,7 +61,7 @@ def list_tables() -> List[Dict[str, Any]]:
     description="Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).",
     tags=["Database"],
 )
-def table_schema(table_name: str) -> Dict[str, Any]:
+def table_schema(table_name: str) -> dict[str, Any]:
     """
     Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).
     Includes columns, PK, FKs, indexes.
@@ -84,7 +84,7 @@ def table_schema(table_name: str) -> Dict[str, Any]:
     description="Return first rows of a table. Supports ?limit= in the URI.",
     tags=["Database"],
 )
-def table_preview(table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
+def table_preview(table_name: str, limit: int = 50) -> list[dict[str, Any]]:
     """
     Return first rows of a table. Supports ?limit= in the URI.
     """
@@ -102,7 +102,7 @@ def table_preview(table_name: str, limit: int = 50) -> List[Dict[str, Any]]:
     description="Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety.",
     tags=["Database"],
 )
-def run_select(sql_query: str, limit: Optional[int] = 100) -> List[Dict[str, Any]]:
+def run_select(sql_query: str, limit: int | None = 100) -> list[dict[str, Any]]:
     """
     Run a read-only SELECT with an optional LIMIT guard.
     Rejects non-SELECT statements for safety.

@@ -6,6 +6,7 @@ from datetime import datetime, time
 from pathlib import Path
 
 import pandas as pd
+from sqlalchemy import insert
 from sqlmodel import Session, select
 
 from modulo_consultas_parlamentarias.db.engine import get_engine
@@ -408,7 +409,28 @@ class CSVDataPopulator:
             logger.warning(f"CSV file not found: {csv_file}")
             return 0
 
-        df = self._read_csv_safely(csv_file, separator="\t")
+        # The file has malformed headers with line breaks, so we'll use a more robust approach
+        try:
+            # First, try to read with tab separator and skip bad lines
+            df = pd.read_csv(csv_file, sep="\t", encoding="utf-8", engine="python", on_bad_lines="skip")
+            
+            # If we get a single column with all data concatenated, try semicolon separator
+            if len(df.columns) == 1:
+                df = pd.read_csv(csv_file, sep=";", encoding="utf-8", header=None, skiprows=1, engine="python", on_bad_lines="skip")
+                # Assign the correct column names based on the expected structure
+                expected_columns = [
+                    "asuntoid", "sesion", "asunto", "ano", "fecha", "hora", "base", 
+                    "mayoria", "resultado", "presidente", "presentes", "ausentes", 
+                    "abstenciones", "afirmativos", "negativos", "votopresidente", 
+                    "titulo", "auditoria", "permalink", "mes"
+                ]
+                # Only assign as many column names as we have columns
+                df.columns = expected_columns[:len(df.columns)]
+            
+            logger.info(f"Successfully read {len(df)} rows from {csv_file}")
+        except Exception as e:
+            logger.error(f"Failed to read {csv_file}: {e}")
+            return 0
         df = df.dropna(axis=1, how="all")
 
         df.columns = df.columns.str.strip().str.lower()
@@ -636,18 +658,18 @@ class CSVDataPopulator:
         Returns:
             int: Number of new records added.
         """
-        csv_file = self.csv_dir / "senadores-senadores.csv"
+        csv_file = self.csv_dir / "diputados-senadores.csv"
         if not csv_file.exists():
             logger.warning(f"CSV file not found: {csv_file}")
             return 0
 
-        df = self._read_csv_safely(csv_file, separator=",")
+        df = self._read_csv_safely(csv_file, separator=";")
 
         # Clean column names
         df.columns = df.columns.str.strip().str.lower()
 
-        # Map CSV columns to model fields
-        column_mapping = {"senadorid": "senador_id"}
+        # Map CSV columns to model fields - the CSV uses diputadoId but this is senator data
+        column_mapping = {"diputadoid": "senador_id"}
 
         df = df.rename(columns=column_mapping)
         records = df.to_dict("records")
@@ -683,7 +705,7 @@ class CSVDataPopulator:
 
     def populate_votaciones_diputados(self) -> int:
         """
-        Populate votaciones_diputados table from CSV.
+        Populate votaciones_diputados table from CSV using a fast bulk insert.
 
         Returns:
             int: Number of new records added.
@@ -694,80 +716,67 @@ class CSVDataPopulator:
             return 0
 
         df = self._read_csv_safely(csv_file)
-
-        # Clean column names
         df.columns = df.columns.str.strip().str.lower()
 
-        # Map CSV columns to model fields
         column_mapping = {
             "asuntoid": "asunto_id",
             "diputadoid": "diputado_id",
             "bloqueid": "bloque_id",
         }
-
         df = df.rename(columns=column_mapping)
-        records = df.to_dict("records")
+
+        # Drop rows with missing essential identifiers
+        df.dropna(subset=["asunto_id", "diputado_id", "voto"], inplace=True)
 
         with Session(self.engine) as session:
-            # For votaciones, we'll check for duplicates based on combination of fields
-            # since there's no unique ID in the CSV
+            # Fetch existing records' composite keys for efficient filtering
+            existing_votes_query = select(
+                DBVotacionDiputados.asunto_id,
+                DBVotacionDiputados.diputado_id,
+                DBVotacionDiputados.voto,
+            )
+            existing_votes = {
+                (r.asunto_id, r.diputado_id, r.voto)
+                for r in session.exec(existing_votes_query)
+            }
+            logger.info(f"Found {len(existing_votes)} existing votaciones_diputados records.")
 
-            new_records = []
-            for record in records:
-                try:
-                    # Check if this exact vote already exists
-                    existing = session.exec(
-                        select(DBVotacionDiputados).where(
-                            DBVotacionDiputados.asunto_id
-                            == record["asunto_id"],
-                            DBVotacionDiputados.diputado_id
-                            == record["diputado_id"],
-                            DBVotacionDiputados.voto == record["voto"],
-                        )
-                    ).first()
+            if not existing_votes:
+                 # If the table is empty, all records are new
+                new_records_df = df
+            else:
+                # Create a temporary key in the DataFrame for filtering
+                df["_composite_key"] = list(
+                    zip(df["asunto_id"], df["diputado_id"], df["voto"])
+                )
+                # Filter out records that are already in the database
+                new_records_df = df[~df["_composite_key"].isin(existing_votes)]
+                new_records_df = new_records_df.drop(columns=["_composite_key"])
 
-                    if not existing:
-                        votacion = DBVotacionDiputados(
-                            **{
-                                k: v
-                                for k, v in record.items()
-                                if k in DBVotacionDiputados.model_fields
-                                and pd.notna(v)
-                            }
-                        )
-                        new_records.append(votacion)
+            if new_records_df.empty:
+                logger.info("No new votaciones_diputados records to add.")
+                return 0
 
-                except Exception as e:
-                    logger.warning(
-                        f"Error processing vote record {record}: {e}"
-                    )
-                    continue
+            # Prepare records for bulk insert
+            records_to_insert = new_records_df.to_dict("records")
 
-            if new_records:
-                # Process in batches to avoid memory issues
-                batch_size = 100000
-                total_added = 0
-
-                for i in range(0, len(new_records), batch_size):
-                    batch = new_records[i : i + batch_size]
-                    session.add_all(batch)
-                    session.commit()
-                    total_added += len(batch)
-                    logger.info(
-                        f"Added batch of {len(batch)} votaciones_diputados records"
-                    )
-
+            # Perform bulk insert
+            try:
+                session.execute(insert(DBVotacionDiputados), records_to_insert)
+                session.commit()
+                total_added = len(records_to_insert)
                 logger.info(
-                    f"Added {total_added} new votaciones_diputados records total"
+                    f"Successfully added {total_added} new votaciones_diputados records."
                 )
                 return total_added
-            else:
-                logger.info("No new votaciones_diputados records to add")
+            except Exception as e:
+                logger.error(f"Bulk insert failed for votaciones_diputados: {e}")
+                session.rollback()
                 return 0
 
     def populate_votaciones_senadores(self) -> int:
         """
-        Populate votaciones_senadores table from CSV.
+        Populate votaciones_senadores table from CSV using a fast bulk insert.
 
         Returns:
             int: Number of new records added.
@@ -777,91 +786,75 @@ class CSVDataPopulator:
             logger.warning(f"CSV file not found: {csv_file}")
             return 0
 
-        df = self._read_csv_safely(csv_file, separator=",")
-
-        # Clean column names
+        df = self._read_csv_safely(csv_file, separator=";")
         df.columns = df.columns.str.strip().str.lower()
+        
+        logger.info(f"Original columns in votaciones-senadores.csv: {list(df.columns)}")
 
-        # Map CSV columns to model fields
         column_mapping = {
             "asuntoid": "asunto_id",
-            "senadorid": "senador_id",
+            "diputadoid": "senador_id",  # The CSV uses diputadoId but this is senator data
             "bloqueid": "bloque_id",
         }
-
         df = df.rename(columns=column_mapping)
-        records = df.to_dict("records")
+        
+        logger.info(f"Columns after mapping: {list(df.columns)}")
+        
+        # Check if required columns exist
+        required_cols = ["asunto_id", "senador_id", "voto"]
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            logger.error(f"Missing required columns: {missing_cols}")
+            logger.error(f"Available columns: {list(df.columns)}")
+            return 0
+
+        # Drop rows with missing essential identifiers
+        df.dropna(subset=["asunto_id", "senador_id", "voto"], inplace=True)
 
         with Session(self.engine) as session:
-            # For votaciones, we'll check for duplicates based on combination of fields
-            # since there's no unique ID in the CSV
+            # Fetch existing records' composite keys for efficient filtering
+            existing_votes_query = select(
+                DBVotacionSenadores.asunto_id,
+                DBVotacionSenadores.senador_id,
+                DBVotacionSenadores.voto,
+            )
+            existing_votes = {
+                (r.asunto_id, r.senador_id, r.voto)
+                for r in session.exec(existing_votes_query)
+            }
+            logger.info(f"Found {len(existing_votes)} existing votaciones_senadores records.")
 
-            new_records = []
-            for record in records:
-                try:
-                    # Check if this exact vote already exists
-                    existing = session.exec(
-                        select(DBVotacionSenadores).where(
-                            DBVotacionSenadores.asunto_id
-                            == record["asunto_id"],
-                            DBVotacionSenadores.senador_id
-                            == record["senador_id"],
-                            DBVotacionSenadores.voto == record["voto"],
-                        )
-                    ).first()
+            if not existing_votes:
+                # If the table is empty, all records are new
+                new_records_df = df
+            else:
+                # Create a temporary key in the DataFrame for filtering
+                df["_composite_key"] = list(
+                    zip(df["asunto_id"], df["senador_id"], df["voto"])
+                )
+                # Filter out records that are already in the database
+                new_records_df = df[~df["_composite_key"].isin(existing_votes)]
+                new_records_df = new_records_df.drop(columns=["_composite_key"])
 
-                    if not existing:
-                        # Rename keys to match model field names
-                        record_copy = record.copy()
-                        if "asunto_id" in record_copy:
-                            record_copy["asunto_id"] = record_copy.pop(
-                                "asunto_id"
-                            )
-                        if "senador_id" in record_copy:
-                            record_copy["senador_id"] = record_copy.pop(
-                                "senador_id"
-                            )
-                        if "bloque_id" in record_copy:
-                            record_copy["bloque_id"] = record_copy.pop(
-                                "bloque_id"
-                            )
+            if new_records_df.empty:
+                logger.info("No new votaciones_senadores records to add.")
+                return 0
 
-                        votacion = DBVotacionSenadores(
-                            **{
-                                k: v
-                                for k, v in record_copy.items()
-                                if k in DBVotacionSenadores.model_fields
-                                and pd.notna(v)
-                            }
-                        )
-                        new_records.append(votacion)
+            # Prepare records for bulk insert
+            records_to_insert = new_records_df.to_dict("records")
 
-                except Exception as e:
-                    logger.warning(
-                        f"Error processing vote record {record}: {e}"
-                    )
-                    continue
-
-            if new_records:
-                # Process in batches to avoid memory issues
-                batch_size = 100000
-                total_added = 0
-
-                for i in range(0, len(new_records), batch_size):
-                    batch = new_records[i : i + batch_size]
-                    session.add_all(batch)
-                    session.commit()
-                    total_added += len(batch)
-                    logger.info(
-                        f"Added batch of {len(batch)} votaciones_senadores records"
-                    )
-
+            # Perform bulk insert
+            try:
+                session.execute(insert(DBVotacionSenadores), records_to_insert)
+                session.commit()
+                total_added = len(records_to_insert)
                 logger.info(
-                    f"Added {total_added} new votaciones_senadores records total"
+                    f"Successfully added {total_added} new votaciones_senadores records."
                 )
                 return total_added
-            else:
-                logger.info("No new votaciones_senadores records to add")
+            except Exception as e:
+                logger.error(f"Bulk insert failed for votaciones_senadores: {e}")
+                session.rollback()
                 return 0
 
     def populate_all(self) -> dict[str, int]:

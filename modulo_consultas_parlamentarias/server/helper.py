@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 from sqlmodel import SQLModel
 from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.sql.schema import Column as SAColumn
@@ -7,7 +7,7 @@ from sqlalchemy.sql.schema import Column as SAColumn
 ModelOrTableOrName = Union[type[SQLModel], Table, str]
 
 
-def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> Dict[str, Any]:
+def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> dict[str, Any]:
     """
     Return table metadata (columns, PK, FKs, indexes) using SQLModel/SQLAlchemy Table objects,
     mirroring the structure produced by Inspector.
@@ -15,7 +15,7 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> Dict[str, Any]:
     table, table_name = _resolve_table(obj)
 
     # --- columns ---
-    columns_info: List[Dict[str, Any]] = []
+    columns_info: list[dict[str, Any]] = []
     for col in table.columns:  # type: ignore[attr-defined]
         columns_info.append(
             {
@@ -30,7 +30,7 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> Dict[str, Any]:
     primary_key = [col.name for col in table.primary_key.columns]  # type: ignore[attr-defined]
 
     # --- foreign keys (grouped by constraint) ---
-    fk_info: List[Dict[str, Any]] = []
+    fk_info: list[dict[str, Any]] = []
     for c in table.constraints:  # type: ignore[attr-defined]
         if isinstance(c, ForeignKeyConstraint):
             # Each FK constraint may have multiple column pairs
@@ -49,7 +49,7 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> Dict[str, Any]:
             )
 
     # --- indexes ---
-    idx_info: List[Dict[str, Any]] = []
+    idx_info: list[dict[str, Any]] = []
     for ix in getattr(table, "indexes", set()):  # type: ignore[attr-defined]
         # Index.columns is a ColumnCollection; fall back to expressions for computed indexes
         col_names = list(ix.columns.keys()) if hasattr(ix, "columns") else []
@@ -73,7 +73,7 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> Dict[str, Any]:
     }
 
 
-def _resolve_table(obj: ModelOrTableOrName) -> Tuple[Table, str]:
+def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
     """Accept a SQLModel class, a Table, or 'schema.table'/'table' string and return (Table, printable_name)."""
     if isinstance(obj, str):
         schema, name = _split_schema_table(obj)
@@ -101,11 +101,11 @@ def _resolve_table(obj: ModelOrTableOrName) -> Tuple[Table, str]:
     raise TypeError("Expected SQLModel class, SQLAlchemy Table, or table-name string.")
 
 
-def _split_schema_table(s: str) -> Tuple[Optional[str], str]:
+def _split_schema_table(s: str) -> tuple[str | None, str]:
     return (s.split(".", 1)[0], s.split(".", 1)[1]) if "." in s else (None, s)
 
 
-def _stringify_default(col: SAColumn) -> Optional[str]:
+def _stringify_default(col: SAColumn) -> str | None:
     """
     Convert Python-side or server-side defaults to a string similar to Inspector.get_columns()['default'].
     Preference: server_default (DDL) > default (Python).

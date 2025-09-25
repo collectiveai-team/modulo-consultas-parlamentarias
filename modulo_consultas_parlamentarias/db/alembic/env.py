@@ -10,7 +10,7 @@ from modulo_consultas_parlamentarias.db.engine import get_engine
 
 # Import all models to ensure they are registered with SQLModel
 # This is important for autogenerate to work properly
-from modulo_consultas_parlamentarias.db.models import *
+from modulo_consultas_parlamentarias.db.models import *  # noqa: F401, F403
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
