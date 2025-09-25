@@ -51,6 +51,9 @@ db-create-tables:
 db-populate:
 	uv run python -m scripts.populate_db
 
+download-tables:
+	uv run python -m scripts.download_tables
+
 db-migrate:
 	uv run alembic -c modulo_consultas_parlamentarias/alembic.ini upgrade head
 

@@ -33,6 +33,7 @@ dependencies = [
     "alembic==1.13.3",
     "fastmcp>=2.12.0",
     "python-dotenv>=1.1.1",
+    "gdown==5.2.0",
 ]
 
 [project.scripts]
