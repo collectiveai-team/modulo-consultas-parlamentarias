@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Any, Literal
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 from langchain_openai import OpenAIEmbeddings
 from sqlmodel import Session, text
@@ -20,6 +21,9 @@ from modulo_consultas_parlamentarias.retriever import Retriever
 from modulo_consultas_parlamentarias.server.helper import (
     get_table_info_sqlmodel,
 )
+
+
+load_dotenv()
 
 # Create server
 mcp = FastMCP("Módulo de Consultas Parlamentarias")
@@ -160,9 +164,7 @@ def table_preview(table_name: str, limit: int = 50) -> list[dict[str, Any]]:
     description="Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety.",
     tags=["Database"],
 )
-def run_select(
-    sql_query: str, limit: int | None = 100
-) -> list[dict[str, Any]]:
+def run_select(sql_query: str, limit: int | None = 100) -> list[dict[str, Any]]:
     """
     Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety.
 

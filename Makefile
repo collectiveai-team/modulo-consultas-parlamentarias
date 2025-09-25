@@ -74,3 +74,7 @@ linter:
 linter-fix:
 	uv run ruff check --fix ./
 	uv run ruff format ./
+	
+# Server operations
+server-run:
+    uv run python -m modulo_consultas_parlamentarias.server.server
