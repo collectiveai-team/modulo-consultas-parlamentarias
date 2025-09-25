@@ -796,7 +796,8 @@ class CSVDataPopulator:
 
             # Perform bulk insert
             try:
-                session.exec(insert(DBVotacionDiputados), records_to_insert)
+                # TODO: replace deprecated method
+                session.execute(insert(DBVotacionDiputados), records_to_insert)
                 session.commit()
                 total_added = len(records_to_insert)
                 logger.info(
@@ -880,7 +881,8 @@ class CSVDataPopulator:
 
             # Perform bulk insert
             try:
-                session.exec(insert(DBVotacionSenadores), records_to_insert)
+                # TODO: replace deprecated method
+                session.execute(insert(DBVotacionSenadores), records_to_insert)
                 session.commit()
                 total_added = len(records_to_insert)
                 logger.info(
