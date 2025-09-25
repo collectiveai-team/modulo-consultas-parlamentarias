@@ -7,3 +7,5 @@
 .venv
 
 resources/*
+
+modulo_consultas_parlamentarias/version.py
