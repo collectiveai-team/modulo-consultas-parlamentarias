@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from modulo_consultas_parlamentarias.logger import get_logger
+from cparla.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -102,21 +102,17 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Download to a temporary file
-    with tempfile.NamedTemporaryFile(
-        suffix=".tar.xz", delete=False
-    ) as temp_file:
+    with tempfile.NamedTemporaryFile(suffix=".tar.xz", delete=False) as temp_file:
         temp_path = temp_file.name
 
     try:
-        logger.info(f"Downloading tables.tar.xz from Google Drive...")
+        logger.info("Downloading tables.tar.xz from Google Drive...")
         if download_from_gdrive(args.url, temp_path):
             logger.info("Download successful!")
 
             # Extract the file
             if extract_tar_xz(temp_path, str(output_dir)):
-                logger.info(
-                    f"Successfully extracted tables to {output_dir}/tables/"
-                )
+                logger.info(f"Successfully extracted tables to {output_dir}/tables/")
                 return 0
 
         logger.error("Failed to download or extract the tables archive.")

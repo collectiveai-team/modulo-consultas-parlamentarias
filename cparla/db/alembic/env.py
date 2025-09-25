@@ -6,11 +6,11 @@ from logging.config import fileConfig
 from alembic import context
 from sqlmodel import SQLModel
 
-from modulo_consultas_parlamentarias.db.engine import get_engine
+from cparla.db.engine import get_engine
 
 # Import all models to ensure they are registered with SQLModel
 # This is important for autogenerate to work properly
-from modulo_consultas_parlamentarias.db.models import *  # noqa: F401, F403
+from cparla.db.models import *  # noqa: F401, F403
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -69,9 +69,7 @@ def run_migrations_online() -> None:
     connectable = get_engine()
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

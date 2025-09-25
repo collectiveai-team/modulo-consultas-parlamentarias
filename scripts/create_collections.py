@@ -17,9 +17,9 @@ import pandas as pd
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 
-from modulo_consultas_parlamentarias.logger import get_logger
-from modulo_consultas_parlamentarias.retriever import Retriever
-from modulo_consultas_parlamentarias.retriever.retriever import TextChunk
+from cparla.logger import get_logger
+from cparla.retriever import Retriever
+from cparla.retriever.retriever import TextChunk
 
 logger = get_logger(__name__)
 
@@ -125,10 +125,7 @@ def create_collection_from_table(
         retriever.qadrant_client.delete_collection(collection_name)
 
     # Skip if collection exists and force is False
-    if (
-        retriever.qadrant_client.collection_exists(collection_name)
-        and not force
-    ):
+    if retriever.qadrant_client.collection_exists(collection_name) and not force:
         logger.info(f"Collection {collection_name} already exists. Skipping.")
         return
 

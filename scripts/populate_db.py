@@ -9,8 +9,8 @@ import pandas as pd
 from sqlalchemy import insert
 from sqlmodel import Session, select
 
-from modulo_consultas_parlamentarias.db.engine import get_engine
-from modulo_consultas_parlamentarias.db.models import (
+from cparla.db.engine import get_engine
+from cparla.db.models import (
     DBAsuntoDiputados,
     DBAsuntoSenadores,
     DBBloqueDiputados,
@@ -20,7 +20,7 @@ from modulo_consultas_parlamentarias.db.models import (
     DBVotacionDiputados,
     DBVotacionSenadores,
 )
-from modulo_consultas_parlamentarias.logger import get_logger
+from cparla.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -49,9 +49,7 @@ class CSVDataPopulator:
         self.csv_dir = Path(csv_dir)
         self.engine = get_engine()
 
-    def _read_csv_safely(
-        self, filepath: Path, separator: str = ";"
-    ) -> pd.DataFrame:
+    def _read_csv_safely(self, filepath: Path, separator: str = ";") -> pd.DataFrame:
         """
         Read CSV file safely with error handling.
 
@@ -74,9 +72,7 @@ class CSVDataPopulator:
                 )
                 return df
             except Exception as e:
-                logger.error(
-                    f"Failed to read {filepath} with latin-1 encoding: {e}"
-                )
+                logger.error(f"Failed to read {filepath} with latin-1 encoding: {e}")
                 raise
         except Exception as e:
             logger.error(f"Failed to read {filepath}: {e}")
@@ -101,9 +97,7 @@ class CSVDataPopulator:
         return text or None
 
     @staticmethod
-    def _normalize_required_text(
-        value: object, *, field: str, dataset: str
-    ) -> str:
+    def _normalize_required_text(value: object, *, field: str, dataset: str) -> str:
         """
         Normalize text values ensuring presence.
 
@@ -134,9 +128,7 @@ class CSVDataPopulator:
             int: The parsed integer value.
         """
         if value is None or (isinstance(value, float) and pd.isna(value)):
-            raise ValueError(
-                f"Missing required numeric field '{field}' in {dataset}"
-            )
+            raise ValueError(f"Missing required numeric field '{field}' in {dataset}")
 
         if isinstance(value, (int,)):
             return int(value)
@@ -146,9 +138,7 @@ class CSVDataPopulator:
 
         text = str(value).strip().replace(",", ".")
         if not text:
-            raise ValueError(
-                f"Missing required numeric field '{field}' in {dataset}"
-            )
+            raise ValueError(f"Missing required numeric field '{field}' in {dataset}")
 
         try:
             return int(float(text))
@@ -205,9 +195,7 @@ class CSVDataPopulator:
             except ValueError:
                 continue
 
-        raise ValueError(
-            f"Unsupported date format '{text}' for 'fecha' in {dataset}"
-        )
+        raise ValueError(f"Unsupported date format '{text}' for 'fecha' in {dataset}")
 
     @staticmethod
     def _parse_time(value: object) -> time | None:
@@ -236,9 +224,7 @@ class CSVDataPopulator:
             except ValueError:
                 continue
 
-        logger.warning(
-            "Unable to parse time value %r; defaulting to None", value
-        )
+        logger.warning("Unable to parse time value %r; defaulting to None", value)
         return None
 
     @staticmethod
@@ -277,9 +263,7 @@ class CSVDataPopulator:
         )
 
         payload["hora"] = CSVDataPopulator._parse_time(record.get("hora"))
-        payload["base"] = CSVDataPopulator._normalize_optional_text(
-            record.get("base")
-        )
+        payload["base"] = CSVDataPopulator._normalize_optional_text(record.get("base"))
         payload["mayoria"] = CSVDataPopulator._normalize_optional_text(
             record.get("mayoria")
         )
@@ -309,9 +293,7 @@ class CSVDataPopulator:
         if voto_presidente is not None:
             payload["votopresidente"] = voto_presidente
 
-        auditoria = CSVDataPopulator._normalize_optional_text(
-            record.get("auditoria")
-        )
+        auditoria = CSVDataPopulator._normalize_optional_text(record.get("auditoria"))
         if auditoria is not None:
             payload["auditoria"] = auditoria
 
@@ -347,9 +329,7 @@ class CSVDataPopulator:
 
         with Session(self.engine) as session:
             # Check existing records to avoid duplicates
-            existing_ids = set(
-                session.exec(select(DBAsuntoDiputados.asunto_id)).all()
-            )
+            existing_ids = set(session.exec(select(DBAsuntoDiputados.asunto_id)).all())
 
             new_records = []
             for record in records:
@@ -389,9 +369,7 @@ class CSVDataPopulator:
             if new_records:
                 session.add_all(new_records)
                 session.commit()
-                logger.info(
-                    f"Added {len(new_records)} new asuntos_diputados records"
-                )
+                logger.info(f"Added {len(new_records)} new asuntos_diputados records")
             else:
                 logger.info("No new asuntos_diputados records to add")
 
@@ -479,9 +457,7 @@ class CSVDataPopulator:
         records = df.to_dict("records")
 
         with Session(self.engine) as session:
-            existing_ids = set(
-                session.exec(select(DBAsuntoSenadores.asunto_id)).all()
-            )
+            existing_ids = set(session.exec(select(DBAsuntoSenadores.asunto_id)).all())
 
             new_records = []
             for record in records:
@@ -490,9 +466,7 @@ class CSVDataPopulator:
                         record, dataset="asuntos_senadores"
                     )
                 except ValueError as exc:
-                    logger.warning(
-                        "Skipping senador asunto due to data issue: %s", exc
-                    )
+                    logger.warning("Skipping senador asunto due to data issue: %s", exc)
                     continue
 
                 asunto_id = payload["asunto_id"]
@@ -521,9 +495,7 @@ class CSVDataPopulator:
             if new_records:
                 session.add_all(new_records)
                 session.commit()
-                logger.info(
-                    f"Added {len(new_records)} new asuntos_senadores records"
-                )
+                logger.info(f"Added {len(new_records)} new asuntos_senadores records")
             else:
                 logger.info("No new asuntos_senadores records to add")
 
@@ -553,9 +525,7 @@ class CSVDataPopulator:
         records = df.to_dict("records")
 
         with Session(self.engine) as session:
-            existing_ids = set(
-                session.exec(select(DBBloqueDiputados.bloque_id)).all()
-            )
+            existing_ids = set(session.exec(select(DBBloqueDiputados.bloque_id)).all())
 
             new_records = []
             for record in records:
@@ -564,8 +534,7 @@ class CSVDataPopulator:
                         **{
                             k: v
                             for k, v in record.items()
-                            if k in DBBloqueDiputados.model_fields
-                            and pd.notna(v)
+                            if k in DBBloqueDiputados.model_fields and pd.notna(v)
                         }
                     )
                     new_records.append(bloque)
@@ -573,9 +542,7 @@ class CSVDataPopulator:
             if new_records:
                 session.add_all(new_records)
                 session.commit()
-                logger.info(
-                    f"Added {len(new_records)} new bloques_diputados records"
-                )
+                logger.info(f"Added {len(new_records)} new bloques_diputados records")
             else:
                 logger.info("No new bloques_diputados records to add")
 
@@ -605,9 +572,7 @@ class CSVDataPopulator:
         records = df.to_dict("records")
 
         with Session(self.engine) as session:
-            existing_ids = set(
-                session.exec(select(DBBloqueSenadores.bloque_id)).all()
-            )
+            existing_ids = set(session.exec(select(DBBloqueSenadores.bloque_id)).all())
 
             new_records = []
             for record in records:
@@ -621,9 +586,7 @@ class CSVDataPopulator:
             if new_records:
                 session.add_all(new_records)
                 session.commit()
-                logger.info(
-                    f"Added {len(new_records)} new bloques_senadores records"
-                )
+                logger.info(f"Added {len(new_records)} new bloques_senadores records")
             else:
                 logger.info("No new bloques_senadores records to add")
 
@@ -664,8 +627,7 @@ class CSVDataPopulator:
                         **{
                             k: v
                             for k, v in record.items()
-                            if k in DBLegisladorDiputados.model_fields
-                            and pd.notna(v)
+                            if k in DBLegisladorDiputados.model_fields and pd.notna(v)
                         }
                     )
                     new_records.append(legislador)
@@ -716,8 +678,7 @@ class CSVDataPopulator:
                         **{
                             k: v
                             for k, v in record.items()
-                            if k in DBLegisladorSenadores.model_fields
-                            and pd.notna(v)
+                            if k in DBLegisladorSenadores.model_fields and pd.notna(v)
                         }
                     )
                     new_records.append(legislador)
@@ -783,9 +744,7 @@ class CSVDataPopulator:
                 )
                 # Filter out records that are already in the database
                 new_records_df = df[~df["_composite_key"].isin(existing_votes)]
-                new_records_df = new_records_df.drop(
-                    columns=["_composite_key"]
-                )
+                new_records_df = new_records_df.drop(columns=["_composite_key"])
 
             if new_records_df.empty:
                 logger.info("No new votaciones_diputados records to add.")
@@ -805,9 +764,7 @@ class CSVDataPopulator:
                 )
                 return total_added
             except Exception as e:
-                logger.error(
-                    f"Bulk insert failed for votaciones_diputados: {e}"
-                )
+                logger.error(f"Bulk insert failed for votaciones_diputados: {e}")
                 session.rollback()
                 return 0
 
@@ -868,9 +825,7 @@ class CSVDataPopulator:
                 )
                 # Filter out records that are already in the database
                 new_records_df = df[~df["_composite_key"].isin(existing_votes)]
-                new_records_df = new_records_df.drop(
-                    columns=["_composite_key"]
-                )
+                new_records_df = new_records_df.drop(columns=["_composite_key"])
 
             if new_records_df.empty:
                 logger.info("No new votaciones_senadores records to add.")
@@ -890,9 +845,7 @@ class CSVDataPopulator:
                 )
                 return total_added
             except Exception as e:
-                logger.error(
-                    f"Bulk insert failed for votaciones_senadores: {e}"
-                )
+                logger.error(f"Bulk insert failed for votaciones_senadores: {e}")
                 session.rollback()
                 return 0
 
@@ -912,12 +865,8 @@ class CSVDataPopulator:
         results["asuntos_senadores"] = self.populate_asuntos_senadores()
         results["bloques_diputados"] = self.populate_bloques_diputados()
         results["bloques_senadores"] = self.populate_bloques_senadores()
-        results["legisladores_diputados"] = (
-            self.populate_legisladores_diputados()
-        )
-        results["legisladores_senadores"] = (
-            self.populate_legisladores_senadores()
-        )
+        results["legisladores_diputados"] = self.populate_legisladores_diputados()
+        results["legisladores_senadores"] = self.populate_legisladores_senadores()
         results["votaciones_diputados"] = self.populate_votaciones_diputados()
         results["votaciones_senadores"] = self.populate_votaciones_senadores()
 
@@ -973,9 +922,7 @@ def populate_from_csv(
 
 def main():
     """Main CLI entry point for population script."""
-    parser = argparse.ArgumentParser(
-        description="Populate database with CSV data"
-    )
+    parser = argparse.ArgumentParser(description="Populate database with CSV data")
     parser.add_argument(
         "--csv-dir",
         type=str,

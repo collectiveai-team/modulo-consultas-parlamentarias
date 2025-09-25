@@ -61,9 +61,7 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> dict[str, Any]:
         col_names = list(ix.columns.keys()) if hasattr(ix, "columns") else []
         if not col_names and hasattr(ix, "expressions"):
             # Best-effort names from expressions (may be Column objects or SQL expressions)
-            col_names = [
-                getattr(expr, "name", str(expr)) for expr in ix.expressions
-            ]
+            col_names = [getattr(expr, "name", str(expr)) for expr in ix.expressions]
         idx_info.append(
             {
                 "name": ix.name,
@@ -100,12 +98,8 @@ def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
             # Try without schema if user passed only the bare name
             table = SQLModel.metadata.tables.get(name)
         if table is None:
-            raise KeyError(
-                f"Table '{obj}' not found in SQLModel.metadata.tables"
-            )
-        printable = (
-            f"{table.schema}.{table.name}" if table.schema else table.name
-        )
+            raise KeyError(f"Table '{obj}' not found in SQLModel.metadata.tables")
+        printable = f"{table.schema}.{table.name}" if table.schema else table.name
         return table, printable
 
     if isinstance(obj, Table):
@@ -115,14 +109,10 @@ def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
     # Assume SQLModel subclass
     if hasattr(obj, "__table__"):
         table: Table = obj.__table__  # type: ignore[assignment]
-        printable = (
-            f"{table.schema}.{table.name}" if table.schema else table.name
-        )
+        printable = f"{table.schema}.{table.name}" if table.schema else table.name
         return table, printable
 
-    raise TypeError(
-        "Expected SQLModel class, SQLAlchemy Table, or table-name string."
-    )
+    raise TypeError("Expected SQLModel class, SQLAlchemy Table, or table-name string.")
 
 
 def _split_schema_table(s: str) -> tuple[str | None, str]:

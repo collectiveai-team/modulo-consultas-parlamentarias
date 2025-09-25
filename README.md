@@ -74,7 +74,7 @@ make create-collections
 make mcp-up
 
 # Or run interactively for development
- uv run python modulo_consultas_parlamentarias/server/server.py
+ uv run python cparla/server/server.py
 ```
 
 ### 5. Environment Configuration
@@ -231,7 +231,7 @@ uv run chat-app --help
 ### Programmatic Usage
 
 ```python
-from modulo_consultas_parlamentarias.chat_app import ChatApp
+from cparla.chat_app import ChatApp
 import asyncio
 
 async def example():
@@ -247,7 +247,7 @@ asyncio.run(example())
 ## Project Structure
 
 ```
-modulo_consultas_parlamentarias/
+cparla/
 ├── db/                     # Database models and services
 │   ├── models/            # SQLModel definitions
 │   ├── services.py        # Service layer

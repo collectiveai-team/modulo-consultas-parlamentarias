@@ -18,7 +18,7 @@ from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStreamableHTTP
 from pydantic_ai.settings import ModelSettings
 
-from modulo_consultas_parlamentarias.logger import get_logger
+from cparla.logger import get_logger
 
 # Load environment variables from .env file if it exists
 env_file = Path(__file__).parent.parent / ".env"
@@ -65,14 +65,10 @@ class ChatApp:
         if not os.getenv("OPENAI_API_KEY"):
             print("\n❌ ERROR: OpenAI API key not found!")
             print("Please set your OpenAI API key in one of these ways:")
-            print(
-                "1. Set environment variable: export OPENAI_API_KEY='your-api-key'"
-            )
+            print("1. Set environment variable: export OPENAI_API_KEY='your-api-key'")
             print("2. Create a .env file with: OPENAI_API_KEY=your-api-key")
             print("3. Copy .env.example to .env and fill in your API key")
-            print(
-                "\nYou can get an API key from: https://platform.openai.com/api-keys"
-            )
+            print("\nYou can get an API key from: https://platform.openai.com/api-keys")
             raise ValueError("OPENAI_API_KEY environment variable is required")
 
     def _setup_logfire(self) -> None:
@@ -149,9 +145,7 @@ class ChatApp:
         print("• ¿Cómo votó el bloque Unión por la Patria en [asunto]?")
         print("• Estadísticas de votación del senador [nombre]")
         print("• ¿Qué asuntos se votaron en [fecha] en el Senado?")
-        print(
-            "• Comparación de votaciones entre Diputados y Senado sobre [tema]"
-        )
+        print("• Comparación de votaciones entre Diputados y Senado sobre [tema]")
         print("-" * 40 + "\n")
 
     async def _process_user_input(self, user_input: str) -> bool:
@@ -170,9 +164,7 @@ class ChatApp:
             return True
 
         if not user_input:
-            print(
-                "Por favor, escribe una consulta o 'ayuda' para ver ejemplos."
-            )
+            print("Por favor, escribe una consulta o 'ayuda' para ver ejemplos.")
             return True
 
         # Process the query with the agent
@@ -205,9 +197,7 @@ class ChatApp:
                     user_input = input("💬 Tu consulta: ").strip()
 
                     # Process input and check if we should continue
-                    should_continue = await self._process_user_input(
-                        user_input
-                    )
+                    should_continue = await self._process_user_input(user_input)
                     if not should_continue:
                         break
 

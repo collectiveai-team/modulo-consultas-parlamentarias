@@ -9,7 +9,7 @@ chat application for parliamentary queries.
 import asyncio
 import sys
 
-from modulo_consultas_parlamentarias.chat_app import main
+from cparla.chat_app import main
 
 
 def cli_main() -> None:

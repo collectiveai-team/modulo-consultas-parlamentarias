@@ -13,7 +13,7 @@ from pydantic import BaseModel, NonNegativeFloat, StrictStr
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, SparseVectorParams, VectorParams
 
-from modulo_consultas_parlamentarias.logger import get_logger
+from cparla.logger import get_logger
 
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))

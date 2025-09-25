@@ -6,8 +6,8 @@ from fastmcp import FastMCP
 from langchain_openai import OpenAIEmbeddings
 from sqlmodel import Session, text
 
-from modulo_consultas_parlamentarias.db.engine import get_engine
-from modulo_consultas_parlamentarias.db.models import (
+from cparla.db.engine import get_engine
+from cparla.db.models import (
     DBAsuntoDiputados,
     DBAsuntoSenadores,
     DBBloqueDiputados,
@@ -17,8 +17,8 @@ from modulo_consultas_parlamentarias.db.models import (
     DBVotacionDiputados,
     DBVotacionSenadores,
 )
-from modulo_consultas_parlamentarias.retriever import Retriever
-from modulo_consultas_parlamentarias.server.helper import (
+from cparla.retriever import Retriever
+from cparla.server.helper import (
     get_table_info_sqlmodel,
 )
 

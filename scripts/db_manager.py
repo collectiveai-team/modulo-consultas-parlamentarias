@@ -4,8 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from modulo_consultas_parlamentarias.db.engine import create_db_and_tables
-from modulo_consultas_parlamentarias.logger import get_logger
+from cparla.db.engine import create_db_and_tables
+from cparla.logger import get_logger
 from scripts.populate_db import TABLE_CHOICES, populate_from_csv
 
 logger = get_logger(__name__)
@@ -22,9 +22,7 @@ def create_tables():
         return False
 
 
-def populate_data(
-    csv_dir: str | None = None, table: str | None = None
-) -> bool:
+def populate_data(csv_dir: str | None = None, table: str | None = None) -> bool:
     """
     Populate database with CSV data.
 
@@ -77,9 +75,7 @@ def init_database(csv_dir: str | None = None) -> bool:
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="Database management CLI")
-    subparsers = parser.add_subparsers(
-        dest="command", help="Available commands"
-    )
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Create tables command
     subparsers.add_parser("create-tables", help="Create database tables")

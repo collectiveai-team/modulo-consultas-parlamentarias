@@ -61,10 +61,10 @@ create-collections-force:
 	uv run python -m scripts.create_collections --force
 
 db-migrate:
-	uv run alembic -c modulo_consultas_parlamentarias/alembic.ini upgrade head
+	uv run alembic -c cparla/alembic.ini upgrade head
 
 db-migration:
-	uv run alembic -c modulo_consultas_parlamentarias/alembic.ini revision --autogenerate -m "$(MESSAGE)"
+	uv run alembic -c cparla/alembic.ini revision --autogenerate -m "$(MESSAGE)"
 
 # Linting and formatting
 linter:
@@ -77,4 +77,4 @@ linter-fix:
 	
 # Server operations
 server-run:
-    uv run python -m modulo_consultas_parlamentarias.server.server
+    uv run python -m cparla.server.server
