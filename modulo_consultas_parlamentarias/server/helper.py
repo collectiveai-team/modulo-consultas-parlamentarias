@@ -1,17 +1,23 @@
-from typing import Any, Union
-from sqlmodel import SQLModel
-from sqlalchemy import Table, ForeignKeyConstraint
+from typing import Any
+
+from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.sql.schema import Column as SAColumn
+from sqlmodel import SQLModel
 
-
-ModelOrTableOrName = Union[type[SQLModel], Table, str]
+ModelOrTableOrName = type[SQLModel] | Table | str
 
 
 def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> dict[str, Any]:
     """
     Return table metadata (columns, PK, FKs, indexes) using SQLModel/SQLAlchemy Table objects,
     mirroring the structure produced by Inspector.
-    """
+
+    Args:
+        obj (ModelOrTableOrName): A SQLModel class, a SQLAlchemy Table, or a string in the form 'schema.table' or 'table'.
+
+    Returns:
+        dict[str, Any]: A dictionary containing table metadata.
+    """  # noqa: E501
     table, table_name = _resolve_table(obj)
 
     # --- columns ---
@@ -55,7 +61,9 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> dict[str, Any]:
         col_names = list(ix.columns.keys()) if hasattr(ix, "columns") else []
         if not col_names and hasattr(ix, "expressions"):
             # Best-effort names from expressions (may be Column objects or SQL expressions)
-            col_names = [getattr(expr, "name", str(expr)) for expr in ix.expressions]
+            col_names = [
+                getattr(expr, "name", str(expr)) for expr in ix.expressions
+            ]
         idx_info.append(
             {
                 "name": ix.name,
@@ -74,7 +82,15 @@ def get_table_info_sqlmodel(obj: ModelOrTableOrName) -> dict[str, Any]:
 
 
 def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
-    """Accept a SQLModel class, a Table, or 'schema.table'/'table' string and return (Table, printable_name)."""
+    """
+    Accept a SQLModel class, a Table, or 'schema.table'/'table' string and return (Table, printable_name).
+
+    Args:
+        obj (ModelOrTableOrName): A SQLModel class, a SQLAlchemy Table, or a string in the form 'schema.table' or 'table'.
+
+    Returns:
+        tuple[Table, str]: A tuple containing the SQLAlchemy Table object and a printable table
+    """  # noqa: E501
     if isinstance(obj, str):
         schema, name = _split_schema_table(obj)
         # SQLAlchemy stores keys in metadata.tables as 'schema.table' (with dot) if schema is present
@@ -84,8 +100,12 @@ def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
             # Try without schema if user passed only the bare name
             table = SQLModel.metadata.tables.get(name)
         if table is None:
-            raise KeyError(f"Table '{obj}' not found in SQLModel.metadata.tables")
-        printable = f"{table.schema}.{table.name}" if table.schema else table.name
+            raise KeyError(
+                f"Table '{obj}' not found in SQLModel.metadata.tables"
+            )
+        printable = (
+            f"{table.schema}.{table.name}" if table.schema else table.name
+        )
         return table, printable
 
     if isinstance(obj, Table):
@@ -95,13 +115,26 @@ def _resolve_table(obj: ModelOrTableOrName) -> tuple[Table, str]:
     # Assume SQLModel subclass
     if hasattr(obj, "__table__"):
         table: Table = obj.__table__  # type: ignore[assignment]
-        printable = f"{table.schema}.{table.name}" if table.schema else table.name
+        printable = (
+            f"{table.schema}.{table.name}" if table.schema else table.name
+        )
         return table, printable
 
-    raise TypeError("Expected SQLModel class, SQLAlchemy Table, or table-name string.")
+    raise TypeError(
+        "Expected SQLModel class, SQLAlchemy Table, or table-name string."
+    )
 
 
 def _split_schema_table(s: str) -> tuple[str | None, str]:
+    """
+    Split 'schema.table' or 'table' into (schema, table).
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        tuple[str | None, str]: A tuple containing the schema (or None) and the table name.
+    """  # noqa: E501
     return (s.split(".", 1)[0], s.split(".", 1)[1]) if "." in s else (None, s)
 
 
@@ -109,7 +142,13 @@ def _stringify_default(col: SAColumn) -> str | None:
     """
     Convert Python-side or server-side defaults to a string similar to Inspector.get_columns()['default'].
     Preference: server_default (DDL) > default (Python).
-    """
+
+    Args:
+        col (SAColumn): The SQLAlchemy Column object.
+
+    Returns:
+        str | None: A string representation of the default value, or None if no default is set.
+    """  # noqa: E501
     # server_default is a DefaultClause or textual clause; try to render it
     if col.server_default is not None:
         # Best effort string form (e.g., "nextval('seq'::regclass)" or "CURRENT_TIMESTAMP")
