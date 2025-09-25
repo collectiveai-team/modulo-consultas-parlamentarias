@@ -62,6 +62,9 @@ make db-populate
 make qdrant-start
 
 # Verify Qdrant is running (should be available at http://localhost:6333)
+
+# Create vector collections for search functionality
+make create-collections
 ```
 
 ### 4. Run the MCP Server
@@ -130,6 +133,8 @@ make core-run
 - `make db-populate` - Populate database from CSV files
 - `make db-migration MESSAGE="description"` - Create new migration
 - `make db-example` - Run database usage example
+- `make create-collections` - Create Qdrant vector collections for parliamentary data
+- `make create-collections-force` - Recreate Qdrant collections (deletes existing ones)
 
 ### Qdrant Operations
 - `make qdrant-start` - Start Qdrant vector database
