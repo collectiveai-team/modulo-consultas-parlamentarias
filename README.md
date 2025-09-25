@@ -32,6 +32,9 @@ uv sync
 
 # Create environment file (copy from example if available)
 cp .env.example .env  # Edit with your configuration
+
+# Download prepared database tables
+make download-tables
 ```
 
 ### 2. Database Setup
@@ -44,6 +47,9 @@ make db-migrate
 
 # Create database tables
 make db-create-tables
+
+# If you downloaded tables data with the download-tables command,
+# the data is already available in resources/data/tables/
 
 # Populate database with CSV data
 make db-populate
