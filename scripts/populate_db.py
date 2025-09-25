@@ -25,7 +25,7 @@ from modulo_consultas_parlamentarias.logger import get_logger
 logger = get_logger(__name__)
 
 # Default CSV data directory
-DEFAULT_CSV_DIR = Path("resources/data/DecadaVotadaCSV")
+DEFAULT_CSV_DIR = Path("resources/data/tables")
 
 DATE_FORMATS = ("%d/%m/%Y", "%Y-%m-%d")
 TIME_FORMATS = ("%H:%M:%S",)
@@ -412,21 +412,51 @@ class CSVDataPopulator:
         # The file has malformed headers with line breaks, so we'll use a more robust approach
         try:
             # First, try to read with tab separator and skip bad lines
-            df = pd.read_csv(csv_file, sep="\t", encoding="utf-8", engine="python", on_bad_lines="skip")
-            
+            df = pd.read_csv(
+                csv_file,
+                sep="\t",
+                encoding="utf-8",
+                engine="python",
+                on_bad_lines="skip",
+            )
+
             # If we get a single column with all data concatenated, try semicolon separator
             if len(df.columns) == 1:
-                df = pd.read_csv(csv_file, sep=";", encoding="utf-8", header=None, skiprows=1, engine="python", on_bad_lines="skip")
+                df = pd.read_csv(
+                    csv_file,
+                    sep=";",
+                    encoding="utf-8",
+                    header=None,
+                    skiprows=1,
+                    engine="python",
+                    on_bad_lines="skip",
+                )
                 # Assign the correct column names based on the expected structure
                 expected_columns = [
-                    "asuntoid", "sesion", "asunto", "ano", "fecha", "hora", "base", 
-                    "mayoria", "resultado", "presidente", "presentes", "ausentes", 
-                    "abstenciones", "afirmativos", "negativos", "votopresidente", 
-                    "titulo", "auditoria", "permalink", "mes"
+                    "asuntoid",
+                    "sesion",
+                    "asunto",
+                    "ano",
+                    "fecha",
+                    "hora",
+                    "base",
+                    "mayoria",
+                    "resultado",
+                    "presidente",
+                    "presentes",
+                    "ausentes",
+                    "abstenciones",
+                    "afirmativos",
+                    "negativos",
+                    "votopresidente",
+                    "titulo",
+                    "auditoria",
+                    "permalink",
+                    "mes",
                 ]
                 # Only assign as many column names as we have columns
-                df.columns = expected_columns[:len(df.columns)]
-            
+                df.columns = expected_columns[: len(df.columns)]
+
             logger.info(f"Successfully read {len(df)} rows from {csv_file}")
         except Exception as e:
             logger.error(f"Failed to read {csv_file}: {e}")
@@ -739,10 +769,12 @@ class CSVDataPopulator:
                 (r.asunto_id, r.diputado_id, r.voto)
                 for r in session.exec(existing_votes_query)
             }
-            logger.info(f"Found {len(existing_votes)} existing votaciones_diputados records.")
+            logger.info(
+                f"Found {len(existing_votes)} existing votaciones_diputados records."
+            )
 
             if not existing_votes:
-                 # If the table is empty, all records are new
+                # If the table is empty, all records are new
                 new_records_df = df
             else:
                 # Create a temporary key in the DataFrame for filtering
@@ -751,7 +783,9 @@ class CSVDataPopulator:
                 )
                 # Filter out records that are already in the database
                 new_records_df = df[~df["_composite_key"].isin(existing_votes)]
-                new_records_df = new_records_df.drop(columns=["_composite_key"])
+                new_records_df = new_records_df.drop(
+                    columns=["_composite_key"]
+                )
 
             if new_records_df.empty:
                 logger.info("No new votaciones_diputados records to add.")
@@ -770,7 +804,9 @@ class CSVDataPopulator:
                 )
                 return total_added
             except Exception as e:
-                logger.error(f"Bulk insert failed for votaciones_diputados: {e}")
+                logger.error(
+                    f"Bulk insert failed for votaciones_diputados: {e}"
+                )
                 session.rollback()
                 return 0
 
@@ -788,8 +824,10 @@ class CSVDataPopulator:
 
         df = self._read_csv_safely(csv_file, separator=";")
         df.columns = df.columns.str.strip().str.lower()
-        
-        logger.info(f"Original columns in votaciones-senadores.csv: {list(df.columns)}")
+
+        logger.info(
+            f"Original columns in votaciones-senadores.csv: {list(df.columns)}"
+        )
 
         column_mapping = {
             "asuntoid": "asunto_id",
@@ -797,9 +835,9 @@ class CSVDataPopulator:
             "bloqueid": "bloque_id",
         }
         df = df.rename(columns=column_mapping)
-        
+
         logger.info(f"Columns after mapping: {list(df.columns)}")
-        
+
         # Check if required columns exist
         required_cols = ["asunto_id", "senador_id", "voto"]
         missing_cols = [col for col in required_cols if col not in df.columns]
@@ -822,7 +860,9 @@ class CSVDataPopulator:
                 (r.asunto_id, r.senador_id, r.voto)
                 for r in session.exec(existing_votes_query)
             }
-            logger.info(f"Found {len(existing_votes)} existing votaciones_senadores records.")
+            logger.info(
+                f"Found {len(existing_votes)} existing votaciones_senadores records."
+            )
 
             if not existing_votes:
                 # If the table is empty, all records are new
@@ -834,7 +874,9 @@ class CSVDataPopulator:
                 )
                 # Filter out records that are already in the database
                 new_records_df = df[~df["_composite_key"].isin(existing_votes)]
-                new_records_df = new_records_df.drop(columns=["_composite_key"])
+                new_records_df = new_records_df.drop(
+                    columns=["_composite_key"]
+                )
 
             if new_records_df.empty:
                 logger.info("No new votaciones_senadores records to add.")
@@ -853,7 +895,9 @@ class CSVDataPopulator:
                 )
                 return total_added
             except Exception as e:
-                logger.error(f"Bulk insert failed for votaciones_senadores: {e}")
+                logger.error(
+                    f"Bulk insert failed for votaciones_senadores: {e}"
+                )
                 session.rollback()
                 return 0
 
@@ -941,7 +985,7 @@ def main():
         "--csv-dir",
         type=str,
         default=str(DEFAULT_CSV_DIR),
-        help="Path to CSV directory (default: resources/data/DecadaVotadaCSV)",
+        help="Path to CSV directory (default: resources/data/tables)",
     )
     parser.add_argument(
         "--table",

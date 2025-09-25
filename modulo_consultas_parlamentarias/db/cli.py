@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 
 from modulo_consultas_parlamentarias.db.engine import create_db_and_tables
-from scripts.populate_db import populate_from_csv
 from modulo_consultas_parlamentarias.logger import get_logger
+from scripts.populate_db import populate_from_csv
 
 logger = get_logger(__name__)
 
@@ -22,15 +22,23 @@ def create_tables():
         return False
 
 
-def populate_data(csv_dir: str | None = None):
-    """Populate database with CSV data."""
+def populate_data(csv_dir: str | None = None) -> bool:
+    """
+    Populate database with CSV data.
+
+    Args:
+        csv_dir (str | None): Path to CSV directory. If None, uses default path
+
+    Returns:
+        bool: True if successful, False otherwise.
+    """
     try:
-        csv_path = Path(csv_dir) if csv_dir else Path("resources/data/DecadaVotadaCSV")
-        
+        csv_path = Path(csv_dir) if csv_dir else Path("resources/data/tables")
+
         if not csv_path.exists():
             logger.error(f"CSV directory not found: {csv_path}")
             return False
-            
+
         results = populate_from_csv(csv_path)
         logger.info(f"Data population completed: {results}")
         return True
@@ -39,18 +47,26 @@ def populate_data(csv_dir: str | None = None):
         return False
 
 
-def init_database(csv_dir: str | None = None):
-    """Initialize database with tables and data."""
+def init_database(csv_dir: str | None = None) -> bool:
+    """
+    Initialize database with tables and data.
+
+    Args:
+        csv_dir (str | None): Path to CSV directory. If None, uses default path
+
+    Returns:
+        bool: True if successful, False otherwise.
+    """
     logger.info("Initializing database...")
-    
+
     # Create tables first
     if not create_tables():
         return False
-    
+
     # Then populate with data
     if not populate_data(csv_dir):
         return False
-        
+
     logger.info("Database initialization completed successfully")
     return True
 
@@ -58,42 +74,48 @@ def init_database(csv_dir: str | None = None):
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(description="Database management CLI")
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
-    
+    subparsers = parser.add_subparsers(
+        dest="command", help="Available commands"
+    )
+
     # Create tables command
     subparsers.add_parser("create-tables", help="Create database tables")
-    
+
     # Populate data command
-    populate_parser = subparsers.add_parser("populate", help="Populate database with CSV data")
+    populate_parser = subparsers.add_parser(
+        "populate", help="Populate database with CSV data"
+    )
     populate_parser.add_argument(
-        "--csv-dir", 
-        type=str, 
-        help="Path to CSV directory (default: resources/data/DecadaVotadaCSV)"
+        "--csv-dir",
+        type=str,
+        help="Path to CSV directory (default: resources/data/tables)",
     )
-    
+
     # Initialize database command
-    init_parser = subparsers.add_parser("init", help="Initialize database (create tables + populate data)")
-    init_parser.add_argument(
-        "--csv-dir", 
-        type=str, 
-        help="Path to CSV directory (default: resources/data/DecadaVotadaCSV)"
+    init_parser = subparsers.add_parser(
+        "init", help="Initialize database (create tables + populate data)"
     )
-    
+    init_parser.add_argument(
+        "--csv-dir",
+        type=str,
+        help="Path to CSV directory (default: resources/data/tables)",
+    )
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         return
-    
+
     success = False
-    
+
     if args.command == "create-tables":
         success = create_tables()
     elif args.command == "populate":
         success = populate_data(args.csv_dir)
     elif args.command == "init":
         success = init_database(args.csv_dir)
-    
+
     if not success:
         sys.exit(1)
 

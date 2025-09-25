@@ -36,11 +36,7 @@ def populate_data(
         bool: True if successful, False otherwise.
     """
     try:
-        csv_path = (
-            Path(csv_dir)
-            if csv_dir
-            else Path("resources/data/DecadaVotadaCSV")
-        )
+        csv_path = Path(csv_dir) if csv_dir else Path("resources/data/tables")
 
         if not csv_path.exists():
             logger.error(f"CSV directory not found: {csv_path}")
@@ -95,7 +91,7 @@ def main():
     populate_parser.add_argument(
         "--csv-dir",
         type=str,
-        help="Path to CSV directory (default: resources/data/DecadaVotadaCSV)",
+        help="Path to CSV directory (default: resources/data/tables)",
     )
     populate_parser.add_argument(
         "--table",
@@ -112,7 +108,7 @@ def main():
     init_parser.add_argument(
         "--csv-dir",
         type=str,
-        help="Path to CSV directory (default: resources/data/DecadaVotadaCSV)",
+        help="Path to CSV directory (default: resources/data/tables)",
     )
 
     args = parser.parse_args()
