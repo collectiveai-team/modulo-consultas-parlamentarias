@@ -3,9 +3,9 @@ requires = ["setuptools>=80", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "modulo_consultas_parlamentarias"
+name = "cparla"
 requires-python = ">=3.11"
-dynamic = ["version", "dependencies"]
+dynamic = ["version"]
 authors = [
     { name = "Julián Ansaldo", email = "juli@collectiveai.io" },
     { name = "Lionel Chamorro", email = "lio@collectiveai.io" }
@@ -17,15 +17,42 @@ classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
 ]
+dependencies = [
+    "fastembed==0.7.3",
+    "langchain==0.3.27",
+    "langchain-openai==0.3.33",
+    "langchain-qdrant==0.2.1",
+    "logfire==4.7.0",
+    "mcp==1.14.0",
+    "openai==1.107.3",
+    "pandas==2.3.2",
+    "pydantic==2.11.9",
+    "pydantic-ai==1.0.8",
+    "qdrant-client==1.15.1",
+    "sqlmodel==0.0.22",
+    "alembic==1.13.3",
+    "fastmcp>=2.12.0",
+    "python-dotenv>=1.1.1",
+    "gdown==5.2.0",
+]
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
+[project.scripts]
+populate-db = "scripts.populate_db:main"
+db-manager = "scripts.db_manager:main"
+chat-app = "scripts.chat_cli:cli_main"
+# server = "cparla.server.server"
 
 [tool.setuptools.packages.find]
-include = ["modulo_consultas_parlamentarias"]
+include = ["cparla", "scripts"]
 
 [tool.setuptools.package-data]
 "*" = ["conf/*"]
 
 [tool.setuptools_scm]
-version_file = "modulo_consultas_parlamentarias/version.py"
+version_file = "cparla/version.py"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.30.1",
+    "ruff>=0.13.2",
+]
