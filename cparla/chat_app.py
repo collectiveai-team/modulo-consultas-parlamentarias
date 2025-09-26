@@ -53,7 +53,7 @@ class ChatApp:
         self._setup_logfire()
 
         # Initialize MCP server connection
-        self.mcp_server = MCPServerStreamableHTTP(mcp_server_url)
+        self.mcp_server = MCPServerStreamableHTTP(mcp_server_url, max_retries=2)
 
         # Initialize the agent
         self.agent = self._create_agent()
