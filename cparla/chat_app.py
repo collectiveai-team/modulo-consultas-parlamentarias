@@ -115,7 +115,7 @@ class ChatApp:
                 temperature=self.temperature,
             ),
             toolsets=[self.mcp_server],
-            retries=1,
+            retries=2,
         )
 
     def _print_welcome(self) -> None:

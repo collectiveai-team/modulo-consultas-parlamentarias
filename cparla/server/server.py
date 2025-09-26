@@ -110,7 +110,18 @@ def list_tables() -> list[dict[str, Any]]:
     description="Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).",
     tags=["Database"],
 )
-def table_schema(table_name: str) -> dict[str, Any]:
+def table_schema(
+    table_name: Literal[
+        "asuntos_diputados",
+        "asuntos_senadores",
+        "bloques_diputados",
+        "bloques_senadores",
+        "legisladores_diputados",
+        "legisladores_senadores",
+        "votaciones_diputados",
+        "votaciones_senadores",
+    ],
+) -> dict[str, Any]:
     """
     Return detailed schema for a table like 'public.users' or 'users' (defaults to first match).
     Includes columns, PK, FKs, indexes.
@@ -161,7 +172,8 @@ def table_preview(table_name: str, limit: int = 50) -> list[dict[str, Any]]:
 
 @mcp.tool(
     name="run_select",
-    description="Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety.",
+    description="Run a read-only SELECT with an optional LIMIT guard. Rejects non-SELECT statements for safety. First call table_preview or table_schema to get table columns. Available tables: "
+    + ", ".join(TABLES_MAP.keys()),
     tags=["Database"],
 )
 def run_select(sql_query: str, limit: int | None = 100) -> list[dict[str, Any]]:
@@ -176,37 +188,39 @@ def run_select(sql_query: str, limit: int | None = 100) -> list[dict[str, Any]]:
     Returns:
         list[dict[str, Any]]: A list of rows represented as dictionaries.
     """
-    q = sql_query.strip().rstrip(";")
-    if not q.lower().startswith("select"):
-        raise ValueError("Only SELECT statements are permitted.")
-    if " limit " not in q.lower() and limit:
-        q = f"{q} LIMIT {int(limit)}"
+    try:
+        q = sql_query.strip().rstrip(";")
+        if not q.lower().startswith("select"):
+            raise ValueError("Only SELECT statements are permitted.")
+        if " limit " not in q.lower() and limit:
+            q = f"{q} LIMIT {int(limit)}"
 
-    with Session(get_engine()) as session:
-        result = session.exec(text(q)).all()
+        with Session(get_engine()) as session:
+            result = session.exec(text(q)).all()
 
-    # Convert result rows to dictionaries
-    # For raw SQL queries, we need to handle the result differently
-    if result:
-        # Get column names from the first row
-        first_row = result[0]
-        if hasattr(first_row, "_mapping"):
-            # SQLAlchemy Row object with _mapping
-            return [dict(row._mapping) for row in result]
-        elif hasattr(first_row, "__dict__"):
-            # SQLModel object
-            return [dict(row) for row in result]
-        else:
-            # Scalar values or tuples - convert to list of values
-            return [
-                (
-                    {"value": row}
-                    if not isinstance(row, (list, tuple))
-                    else {"values": list(row)}
-                )
-                for row in result
-            ]
-    return []
+        # Convert result rows to dictionaries
+        # For raw SQL queries, we need to handle the result differently
+        if result:
+            # Get column names from the first row
+            first_row = result[0]
+            if hasattr(first_row, "_mapping"):
+                # SQLAlchemy Row object with _mapping
+                return [dict(row._mapping) for row in result]
+            elif hasattr(first_row, "__dict__"):
+                # SQLModel object
+                return [dict(row) for row in result]
+            else:
+                # Scalar values or tuples - convert to list of values
+                return [
+                    (
+                        {"value": row}
+                        if not isinstance(row, (list, tuple))
+                        else {"values": list(row)}
+                    )
+                    for row in result
+                ]
+    except Exception as e:
+        ValueError(f"Error running SELECT query: {str(e)}")
 
 
 @mcp.tool(
@@ -216,7 +230,14 @@ def run_select(sql_query: str, limit: int | None = 100) -> list[dict[str, Any]]:
 )
 async def search_collection(
     query: str,
-    collection_name: str,
+    collection_name: Literal[
+        "legisladores-diputados",
+        "legisladores-senadores",
+        "bloques-diputados",
+        "bloques-senadores",
+        "asuntos-diputados",
+        "asuntos-senadores",
+    ],
     k: int = 10,
     search_type: Literal["hybrid", "dense"] = "hybrid",
 ) -> list[dict[str, Any]]:
