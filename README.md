@@ -70,11 +70,8 @@ make create-collections
 ### 4. Run the MCP Server
 
 ```bash
-# Build and run MCP server
-make mcp-up
-
-# Or run interactively for development
- uv run python cparla/server/server.py
+# Run MCP server
+uv run python cparla/server/server.py
 ```
 
 ### 5. Environment Configuration

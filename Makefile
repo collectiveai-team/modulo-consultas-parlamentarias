@@ -26,21 +26,6 @@ qdrant-flush: qdrant-stop
 	docker compose up -d modulo-consultas-parlamentarias-qdrant
 
 
-mcp-build:
-	docker compose build modulo-consultas-parlamentarias-mcp
-
-mcp-run: mcp-build
-	docker compose  run --rm modulo-consultas-parlamentarias-mcp
-
-mcp-up: mcp-build
-	docker compose up -d modulo-consultas-parlamentarias-mcp
-
-mcp-stop:
-	docker stop modulo-consultas-parlamentarias-mcp
-
-mcp-restart: mcp-stop mcp-up
-
-
 # Database operations
 db-init:
 	uv run python -m scripts.db_manager init
@@ -74,7 +59,3 @@ linter:
 linter-fix:
 	uv run ruff check --fix ./
 	uv run ruff format ./
-	
-# Server operations
-server-run:
-    uv run python -m cparla.server.server
